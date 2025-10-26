@@ -1,0 +1,11 @@
+gym==0.26.2
+numpy<2.0.0
+pyglet>=2.0.0
+
+# Visualization dependencies
+matplotlib>=3.5.0
+networkx>=2.8.0
+
+# Optional dependencies for scripts
+beautifulsoup4>=4.9.0
+Pillow>=8.0.0

@@ -76,7 +76,6 @@ class Marble:
                 self.sprites['label'].x = x_new
                 self.sprites['label'].y = y_new
                 self.sprites['label'].text = str(pos)
-                self.sprites['label'].draw()
             
     def change_direction(self, direction_index):
         r""" 

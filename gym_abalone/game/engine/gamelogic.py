@@ -1,5 +1,8 @@
 import numpy as np
 from ..common.gameutils import AbaloneUtils
+import json
+from datetime import datetime
+from pathlib import Path
  
 class AbaloneGame:
 
@@ -48,6 +51,10 @@ class AbaloneGame:
         # episodes
         self.episode = 0
         self.players_victories = None
+        
+        # history tracking
+        self.history = []
+        self.enable_history = False
     
 
     def reset(self, player=0, random_player=True, variant_name='classical', random_pick=False):
@@ -85,6 +92,10 @@ class AbaloneGame:
         self.episode += 1
         if self.players_victories is None:
             self.players_victories = [0] * self.players
+        
+        # Record initial state if history tracking is enabled
+        if self.enable_history:
+            self._record_initial_state()
 
     # =========================================================================
     #                           BOARD RELATED 
@@ -469,9 +480,153 @@ class AbaloneGame:
         move_check = self.validate_move(pos0, pos1, self.current_player, return_modif=return_modif)
         if move_check:
             move_type, modifications = move_check
+            
+            # Record state BEFORE applying modifications
+            if self.enable_history:
+                self._record_state(pos0, pos1, move_type, modifications)
+            
             self.apply_modifications(modifications)
             return (move_type, modifications) if return_modif else move_type
+    
+    def get_state(self):
+        """
+        Get the current game state as a dictionary
+        
+        Returns:
+            dict: Complete game state including board, turn, player, damages
+        """
+        return {
+            'board': self.board.tolist(),
+            'turn': self.turns_count,
+            'current_player': self.current_player,
+            'players_damages': self.players_damages.copy(),
+            'game_over': self.game_over,
+            'variant': self.variant['id'] if self.variant else None,
+            'episode': self.episode
+        }
+    
+    def _record_state(self, pos0, pos1, move_type, modifications):
+        """
+        Record current state and move to history
+        
+        Args:
+            pos0 (int): Starting position
+            pos1 (int): Ending position
+            move_type (str): Type of move made
+            modifications (list): Modifications applied to the board
+        """
+        state_record = {
+            'turn': self.turns_count,
+            'player': self.current_player,
+            'action': {
+                'from': pos0,
+                'to': pos1,
+                'type': move_type
+            },
+            'board_state': self.board.tolist(),
+            'damages': self.players_damages.copy(),
+            'modifications': modifications
+        }
+        self.history.append(state_record)
+    
+    def _record_initial_state(self):
+        """
+        Record the initial state before any moves
+        """
+        state_record = {
+            'turn': 0,
+            'player': self.current_player,
+            'action': {
+                'from': None,
+                'to': None,
+                'type': 'initial'
+            },
+            'board_state': self.board.tolist(),
+            'damages': self.players_damages.copy(),
+            'modifications': []
+        }
+        self.history.append(state_record)
+    
+    def enable_history_tracking(self, enable=True):
+        """
+        Enable or disable history tracking
+        
+        Args:
+            enable (bool): Whether to enable history tracking
+        """
+        self.enable_history = enable
+        if enable and not self.history:
+            self.history = []
+    
+    def clear_history(self):
+        """Clear the game history"""
+        self.history = []
+    
+    def get_history(self):
+        """
+        Get the complete game history
+        
+        Returns:
+            list: List of all recorded states and moves
+        """
+        return self.history
+    
+    def save_game_history(self, filepath=None, include_metadata=True):
+        """
+        Save game history to a JSON file
+        
+        Args:
+            filepath (str): Path to save the file. If None, generates a timestamped filename in data folder
+            include_metadata (bool): Whether to include game metadata
+            
+        Returns:
+            str: Path where the file was saved
+        """
+        if filepath is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filepath = f"data/abalone_game_{timestamp}.json"
+        
+        game_data = {
+            'history': self.history,
+        }
+        
+        if include_metadata:
+            game_data['metadata'] = {
+                'variant': self.variant,
+                'players': self.players,
+                'episode': self.episode,
+                'total_turns': self.turns_count,
+                'game_over': self.game_over,
+                'final_damages': self.players_damages,
+                'players_victories': self.players_victories,
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        Path(filepath).parent.mkdir(parents=True, exist_ok=True)
+        
+        with open(filepath, 'w') as f:
+            json.dump(game_data, f, indent=2)
+        
+        return filepath
+    
+    def load_game_history(self, filepath):
+        """
+        Load game history from a JSON file
+        
+        Args:
+            filepath (str): Path to the JSON file
+            
+        Returns:
+            dict: Loaded game data including history and metadata
+        """
+        with open(filepath, 'r') as f:
+            game_data = json.load(f)
+        
+        self.history = game_data.get('history', [])
+        
+        return game_data
         
     #def __repr__(self):
 
     #    for pos in 
+

@@ -14,7 +14,6 @@ class Header:
     INFO_STYLE = {
         'font_name' : 'Arial',
         'font_size' : 12,
-        'bold'      : True,
         'color'     : (255, 255, 255, 255),
         'anchor_x'  : 'left', 
         'anchor_y'  : 'center',

@@ -21,10 +21,8 @@ class AbaloneGui(pyglet.window.Window):
 
         # ============================== pyglet ===============================
 
-        display = pyglet.canvas.get_display()
-        screen = display.get_default_screen()
         # init the window's constructor
-        super(AbaloneGui, self).__init__(screen=screen, width=width, height=height, vsync=False)
+        super(AbaloneGui, self).__init__(width=width, height=height, vsync=False)
 
         self.set_caption('Gym Abalone')
         self.set_icon(AbaloneUtils.get_im_centered('assets/icons/icon_32x32.png', centered=False))
@@ -34,7 +32,7 @@ class AbaloneGui(pyglet.window.Window):
         pyglet.gl.glClearColor(1, 1, 1, 1)
         # init the batch and group
         self.batch = pyglet.graphics.Batch()
-        self.groups = [pyglet.graphics.OrderedGroup(i) for i in range(3)]
+        self.groups = [pyglet.graphics.Group(order=i) for i in range(3)]
 
         # ============================== game component ==============================
 
@@ -46,8 +44,9 @@ class AbaloneGui(pyglet.window.Window):
 
     def _center_window(self):
         # center the window
-        x_centered = (self.screen.width - self.width) // 2
-        y_centered = (self.screen.height - self.height) // 2
+        screen = self.display.get_default_screen()
+        x_centered = (screen.width - self.width) // 2
+        y_centered = (screen.height - self.height) // 2
         self.set_location(x_centered, y_centered)
 
     
